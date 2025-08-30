@@ -1,0 +1,67 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual Environment
+env/
+venv/
+.venv/
+
+# Docker
+*.dockerfile
+docker-compose.yml
+
+# Flask
+instance/
+*.db
+*.sqlite
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# PyCharm
+.idea/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+
+# Coverage
+.coverage
+*.cover
+.coverage.*
+
+# pytest
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pylint
+.pylint.d/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
