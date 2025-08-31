@@ -9,7 +9,7 @@ from langchain_community.vectorstores import FAISS
 #step1 -setup llm mistral with huggingface
 
 HF_TOKEN=os.environ.get("HF_TOKEN")
-HUGGINGFACE_REPO_ID="mistralai/Mistral-7B-Instruct-v0.3"
+HUGGINGFACE_REPO_ID="llama-3.1-8b-instant"
 
 def load_llm(huggingface_repo_id):
     llm=HuggingFaceEndPoint(

@@ -258,7 +258,7 @@ def chat():
 
         qa_chain = RetrievalQA.from_chain_type(
             llm=ChatGroq(
-                model_name="llama3-8b-8192",
+                model_name="llama-3.1-8b-instant",
                 temperature=0.0,
                 groq_api_key=groq_api_key,
             ),
