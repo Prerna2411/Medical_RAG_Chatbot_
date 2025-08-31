@@ -3,27 +3,27 @@ name: CI/CD Pipeline for Flask App
 on:
   push:
     branches:
-      - main  # Trigger this workflow whenever new code is pushed to the 'main' branch
+      - main
 
 env:
-  AZURE_WEBAPP_NAME: medical-rag-chatbot       # Name of your Azure Web App
-  AZURE_CONTAINER_REGISTRY: medicalragacr.azurecr.io # Your Azure Container Registry login server
-  IMAGE_NAME: medical-app              # Name of the Docker image
+  AZURE_WEBAPP_NAME: medical-rag-chatbot
+  AZURE_CONTAINER_REGISTRY: medicalragacr.azurecr.io
+  IMAGE_NAME: flask-medical-app
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest  # Use the latest Ubuntu environment to run the job
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4 # Get the source code from your repository
+      uses: actions/checkout@v4
 
     - name: Log in to Azure Container Registry
       uses: azure/docker-login@v1
       with:
         login-server: ${{ env.AZURE_CONTAINER_REGISTRY }}
-        username: ${{ secrets.AZURE_CREDENTIALS.clientId }} # Use the clientId from the secret
-        password: ${{ secrets.AZURE_CREDENTIALS.clientSecret }} # Use the clientSecret from the secret
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
 
     - name: Build and push Docker image
       run: |
@@ -35,4 +35,4 @@ jobs:
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         images: '${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
-        # The AZURE_CREDENTIALS secret is automatically used by this action
+        # This action uses the built-in authentication, so no manual secrets are needed here
