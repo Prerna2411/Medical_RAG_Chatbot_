@@ -7,7 +7,7 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: medical-rag-chatbot
-  AZURE_CONTAINER_REGISTRY: medicalragacr.azurecr.io
+  AZURE_CONTAINER_REGISTRY: medicalchatbotacr.azurecr.io
   IMAGE_NAME: flask-medical-app
 
 jobs:
@@ -35,4 +35,4 @@ jobs:
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         images: '${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
-        # This action uses the built-in authentication, so no manual secrets are needed here
+        # This action uses the built-in authentication, so no manual secrets are  needed
