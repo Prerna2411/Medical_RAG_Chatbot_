@@ -8,7 +8,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv, find_dotenv
 
-# Load environment variables
+# load environment variables
 load_dotenv(find_dotenv())
 
 # --- Configuration ---
