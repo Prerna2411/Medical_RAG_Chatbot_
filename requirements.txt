@@ -1,13 +1,12 @@
 
-
-
-
-streamlit
+torch
+torchvision
 langchain
 langchain-community
 langchain-huggingface
 langchain-groq
-faiss-cpu
-sentence-transformers
-transformers==4.36.2
+langchain-core
 python-dotenv
+streamlit
+transformers
+faiss-cpu  # or faiss-gpu depending on your environment
