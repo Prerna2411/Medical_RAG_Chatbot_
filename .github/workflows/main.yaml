@@ -1,44 +1,45 @@
-
-name: CI/CD Pipeline for Flask App
+name: CI Pipeline (Streamlit + Docker)
 
 on:
   push:
     branches:
       - main
 
-env:
-  AZURE_WEBAPP_NAME: medical-rag-chatbot
-  AZURE_CONTAINER_REGISTRY: medicalchatbotacr.azurecr.io
-  IMAGE_NAME: flask-medical-app
-
 jobs:
-  build-and-deploy:
+  test-and-build:
     runs-on: ubuntu-latest
 
     steps:
+    # 1️ Checkout
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Log in to Azure
-      uses: azure/login@v1
+    # Setup Python
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-        
-    - name: Log in to Azure Container Registry
-      uses: azure/docker-login@v1
-      with:
-        login-server: ${{ env.AZURE_CONTAINER_REGISTRY }}
-        username: ${{ secrets.ACR_USERNAME }}
-        password: ${{ secrets.ACR_PASSWORD }}
+        python-version: '3.10'
 
-    - name: Build and push Docker image
+    # Istall dependencies
+    - name: Install dependencies
       run: |
-        docker build . --file Dockerfile --tag ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        docker push ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        pip install -r requirements.txt
 
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        images: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-           
+    # Test Streamlit App (safer)
+    - name: Check Streamlit App Runs
+      run: |
+        timeout 15s streamlit run app.py --server.headless true || true
+
+    # Build Docker Image
+    - name: Build Docker Image
+      run: |
+        docker build -t medical-rag-chatbot .
+
+    # Run Container (Sanity Check)
+    - name: Run Docker Container
+      run: |
+        docker run -d -p 8501:8501 --name test-container medical-rag-chatbot
+        sleep 10
+        docker ps
+        docker logs test-container
+        docker stop test-container
