@@ -1,12 +1,13 @@
 
 torch
 torchvision
-langchain
-langchain-community
+streamlit
+langchain==0.1.16
+langchain-community==0.0.32
+langchain-core==0.1.52
 langchain-huggingface
 langchain-groq
-langchain-core
+faiss-cpu
+sentence-transformers
+transformers==4.36.2
 python-dotenv
-streamlit
-transformers
-faiss-cpu  # or faiss-gpu depending on your environment
