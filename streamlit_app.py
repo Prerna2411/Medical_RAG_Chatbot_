@@ -8,8 +8,8 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 # ------------------ CONFIG ------------------
-load_dotenv(find_dotenv())
 
+load_dotenv()
 DB_FAISS_PATH = "vectorstore/db_faiss"
 
 # ------------------ STREAMLIT UI ------------------
