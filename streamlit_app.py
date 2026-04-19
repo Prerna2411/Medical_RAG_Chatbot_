@@ -2,10 +2,18 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 
+<<<<<<< HEAD
 from langchain.chains import RetrievalQA
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
+=======
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+>>>>>>> 039fb07 (rag)
 from langchain_groq import ChatGroq
 # ------------------ CONFIG ------------------
 
@@ -13,10 +21,7 @@ load_dotenv()
 DB_FAISS_PATH = "vectorstore/db_faiss"
 
 # ------------------ STREAMLIT UI ------------------
-st.set_page_config(
-    page_title="🧠 Medical RAG Chatbot",
-    layout="wide"
-)
+st.set_page_config(page_title="🧠 Medical RAG Chatbot", layout="wide")
 
 st.title("🩺 AI Medical Assistant")
 st.caption("For informational purposes only. Consult a doctor for medical advice.")
@@ -24,67 +29,73 @@ st.caption("For informational purposes only. Consult a doctor for medical advice
 # ------------------ CACHE VECTORSTORE ------------------
 @st.cache_resource
 def load_vectorstore():
-    try:
-        embedding_model = HuggingFaceEmbeddings(
-            model_name='sentence-transformers/all-MiniLM-L6-v2',
-            model_kwargs={'device': 'cpu'}
-        )
-        db = FAISS.load_local(
-            DB_FAISS_PATH,
-            embedding_model,
-            allow_dangerous_deserialization=True
-        )
-        return db
-    except Exception as e:
-        st.error(f"Failed to load vector store: {e}")
-        return None
+    embedding_model = HuggingFaceEmbeddings(
+        model_name='BAAI/bge-small-en-v1.5',
+        model_kwargs={'device': 'cpu'}
+    )
+
+    db = FAISS.load_local(
+        DB_FAISS_PATH,
+        embedding_model,
+        allow_dangerous_deserialization=True
+    )
+    return db
 
 # ------------------ PROMPT ------------------
 def get_prompt():
-    template = """
-    You are an AI Medical Assistant providing information based on the given context.
-    Use the medical context to answer the question accurately.
+    return ChatPromptTemplate.from_template("""
+You are an AI Medical Assistant providing information based on the given context.
 
-    If the answer is not in context:
-    → Say you don’t have enough information.
+Rules:
+- Use ONLY the context
+- If answer not found → say "I don't have enough information"
+- DO NOT give diagnosis or treatment
+- Always suggest consulting a doctor
 
-    DO NOT:
-    - Give diagnosis
-    - Give treatment advice
+Context:
+{context}
 
-    Always suggest consulting a doctor.
+Question:
+{question}
 
-    Context: {context}
-    Question: {question}
+Answer:
+""")
 
-    Answer:
-    """
-    return PromptTemplate(template=template, input_variables=["context", "question"])
+# ------------------ FORMAT DOCS ------------------
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
 
-# ------------------ QA CHAIN ------------------
+# ------------------ QA CHAIN (LCEL) ------------------
 @st.cache_resource
-def load_qa_chain():
+def load_rag_chain():
     db = load_vectorstore()
-    if db is None:
-        return None
 
     groq_api_key = os.getenv("GROQ_API_KEY")
     if not groq_api_key:
-        st.error("GROQ_API_KEY not found in environment.")
+        st.error("GROQ_API_KEY not found.")
         return None
 
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=ChatGroq(
-            model_name="llama-3.1-8b-instant",
-            temperature=0.0,
-            groq_api_key=groq_api_key,
-        ),
-        chain_type="stuff",
-        retriever=db.as_retriever(search_kwargs={'k': 3}),
-        return_source_documents=True,
-        chain_type_kwargs={'prompt': get_prompt()}
+    llm = ChatGroq(
+        model_name="llama-3.1-8b-instant",
+        temperature=0.0,
+        groq_api_key=groq_api_key,
     )
-    return qa_chain
+
+    retriever = db.as_retriever(search_kwargs={'k': 3})
+
+    prompt = get_prompt()
+
+    rag_chain = (
+        {
+            "context": retriever | format_docs,
+            "question": RunnablePassthrough()
+        }
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+
+    return rag_chain, retriever
 
 # ------------------ CHAT MEMORY ------------------
 if "messages" not in st.session_state:
@@ -104,7 +115,6 @@ for msg in st.session_state.messages:
 query = st.chat_input("Type your medical question...")
 
 if query:
-    # Add user message
     st.session_state.messages.append({"role": "user", "content": query})
 
     with st.chat_message("user"):
@@ -113,34 +123,30 @@ if query:
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
-                qa_chain = load_qa_chain()
+                rag_chain, retriever = load_rag_chain()
 
-                if qa_chain is None:
-                    st.error("QA system not initialized.")
-                else:
-                    response = qa_chain.invoke({"query": query})
+                # Get docs separately for sources
+                docs = retriever.invoke(query)
 
-                    result = response["result"]
-                    source_documents = response["source_documents"]
+                result = rag_chain.invoke(query)
 
-                    # Format sources
-                    sources_text = ""
-                    if source_documents:
-                        sources_text += "\n\n**Sources:**\n"
-                        for doc in source_documents:
-                            page = doc.metadata.get("page", "N/A")
-                            source = doc.metadata.get("source", "Unknown")
-                            sources_text += f"- Page {page} from `{source}`\n"
+                # Format sources
+                sources_text = ""
+                if docs:
+                    sources_text += "\n\n**Sources:**\n"
+                    for doc in docs:
+                        page = doc.metadata.get("page", "N/A")
+                        source = doc.metadata.get("source", "Unknown")
+                        sources_text += f"- Page {page} from `{source}`\n"
 
-                    final_response = result + sources_text
+                final_response = result + sources_text
 
-                    st.markdown(final_response)
+                st.markdown(final_response)
 
-                    # Save response
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": final_response
-                    })
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": final_response
+                })
 
             except Exception as e:
                 st.error(f"Error: {str(e)}")
