@@ -2,12 +2,12 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 
-<<<<<<< HEAD
+
 from langchain.chains import RetrievalQA
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
-=======
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate
