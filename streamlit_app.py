@@ -25,7 +25,7 @@ st.title("🩺 AI Medical Assistant")
 st.caption("For informational purposes only. Consult a doctor for medical advice.")
 
 # ------------------ CACHE VECTORSTORE ------------------
-@st.cache_resource
+
 @st.cache_resource
 def load_vectorstore():
     embedding_model = HuggingFaceEmbeddings(
