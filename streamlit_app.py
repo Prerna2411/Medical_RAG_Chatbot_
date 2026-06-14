@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 from dotenv import load_dotenv
-
+import traceback
 
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -73,10 +73,12 @@ def load_rag_chain():
         st.error("GROQ_API_KEY not found.")
         return None
 
+  
+
     llm = ChatGroq(
-        model_name="llama-3.1-8b-instant",
-        temperature=0.0,
-        groq_api_key=groq_api_key,
+    model="llama-3.1-8b-instant",
+    temperature=0.0,
+    api_key=groq_api_key,
     )
 
     retriever = db.as_retriever(search_kwargs={'k': 3})
@@ -146,5 +148,9 @@ if query:
                     "content": final_response
                 })
 
+            
+
+            
             except Exception as e:
                 st.error(f"Error: {str(e)}")
+                st.code(traceback.format_exc())
