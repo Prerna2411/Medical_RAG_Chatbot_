@@ -26,17 +26,72 @@ st.caption("For informational purposes only. Consult a doctor for medical advice
 
 # ------------------ CACHE VECTORSTORE ------------------
 @st.cache_resource
+@st.cache_resource
 def load_vectorstore():
     embedding_model = HuggingFaceEmbeddings(
-        model_name='BAAI/bge-small-en-v1.5',
-        model_kwargs={'device': 'cpu'}
+        model_name="BAAI/bge-small-en-v1.5",
+        model_kwargs={"device": "cpu"},
+        encode_kwargs={
+            "normalize_embeddings": True,
+            "batch_size": 32
+        }
     )
 
-    db = FAISS.load_local(
-        DB_FAISS_PATH,
-        embedding_model,
-        allow_dangerous_deserialization=True
-    )
+    # Load existing vector DB
+    if os.path.exists(DB_FAISS_PATH):
+        st.success("Loaded existing vector database")
+
+        db = FAISS.load_local(
+            DB_FAISS_PATH,
+            embedding_model,
+            allow_dangerous_deserialization=True
+        )
+
+    else:
+        st.warning("Vector DB not found. Creating new database...")
+
+        from langchain_community.document_loaders import PyPDFLoader
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+        docs = []
+
+        pdf_folder = "data"
+
+        # Load PDFs
+        for file in os.listdir(pdf_folder):
+            if file.endswith(".pdf"):
+                file_path = os.path.join(pdf_folder, file)
+
+                st.write(f"Loading: {file}")
+
+                loader = PyPDFLoader(file_path)
+                docs.extend(loader.load())
+
+        st.write(f"Pages loaded: {len(docs)}")
+
+        # Better chunking for medical encyclopedia
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=800,
+            chunk_overlap=150
+        )
+
+        chunks = splitter.split_documents(docs)
+
+        st.write(f"Chunks created: {len(chunks)}")
+
+        # Create embeddings + vector DB
+        st.write("Creating embeddings...")
+
+        db = FAISS.from_documents(
+            documents=chunks,
+            embedding=embedding_model
+        )
+
+        # Save locally
+        db.save_local(DB_FAISS_PATH)
+
+        st.success("Vector database created successfully")
+
     return db
 
 # ------------------ PROMPT ------------------
@@ -81,7 +136,7 @@ def load_rag_chain():
     api_key=groq_api_key,
     )
 
-    retriever = db.as_retriever(search_kwargs={'k': 3})
+    retriever = db.as_retriever(search_kwargs={'k': 5})
 
     prompt = get_prompt()
 
